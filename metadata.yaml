@@ -15,6 +15,7 @@ description: |
   which allows sites to, e.g., provide customizations (like a custom
   default configuration) on top of it without having to modify the 
   "collectd" package.
+subordinate: true
 requires:
   host:
     interface: juju-info

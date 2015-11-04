@@ -13,16 +13,7 @@ FQDNLookup true
 # Logging                                                                    #
 ##############################################################################
 
-#LoadPlugin logfile
 LoadPlugin syslog
-
-#<Plugin logfile>
-#   LogLevel "info"
-#   File STDOUT
-#   Timestamp true
-#   PrintSeverity false
-#</Plugin>
-
 <Plugin syslog>
     LogLevel info
 </Plugin>
@@ -31,7 +22,7 @@ LoadPlugin syslog
 # LoadPlugin section                                                         #
 ##############################################################################
 
-{% for plugin in plugins %}
+{% for plugin in plugins -%}
 LoadPlugin {{ plugin }}
 {% endfor %}
 

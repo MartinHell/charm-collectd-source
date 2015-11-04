@@ -2,7 +2,7 @@ import os.path
 from charmhelpers import fetch
 from charmhelpers.core import host, hookenv
 from charmhelpers.core.templating import render
-from charms.reactive import when, set_state
+from charms.reactive import when, set_state, hook
 
 
 @hook('config-changed', 'install')
@@ -15,7 +15,7 @@ def setup_collectd():
                 'plugins': get_plugins(),
                 }
 
-    render(source='collectd.conf.js',
+    render(source='collectd.conf.j2',
            target='/etc/collectd/collectd.conf',
            owner='root',
            group='root',
