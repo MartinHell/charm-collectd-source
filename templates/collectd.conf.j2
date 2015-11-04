@@ -1,0 +1,55 @@
+# Config file for collectd(1).
+
+##############################################################################
+# Global                                                                     #
+##############################################################################
+
+#Hostname "localhost"
+FQDNLookup true
+
+#Interval 10
+
+##############################################################################
+# Logging                                                                    #
+##############################################################################
+
+#LoadPlugin logfile
+LoadPlugin syslog
+
+#<Plugin logfile>
+#   LogLevel "info"
+#   File STDOUT
+#   Timestamp true
+#   PrintSeverity false
+#</Plugin>
+
+<Plugin syslog>
+    LogLevel info
+</Plugin>
+
+##############################################################################
+# LoadPlugin section                                                         #
+##############################################################################
+
+{% for plugin in plugins %}
+LoadPlugin {{ plugin }}
+{% endfor %}
+
+##############################################################################
+# Plugin configuration                                                       #
+##############################################################################
+
+<Plugin write_graphite>
+    <Node "graphite-server">
+        Host "{{ config.graphite_host }}"
+        Port "{{ config.graphite_port }}"
+        Protocol "{{ config.graphite_protocol }}"
+        LogSendErrors true
+{% if 'prefix' in config -%}
+        Prefix "{{ config.prefix }}"
+{% endif %}
+        StoreRates true
+        AlwaysAppendDS false
+        EscapeCharacter "_"
+    </Node>
+</Plugin>

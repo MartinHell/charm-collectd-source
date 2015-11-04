@@ -1,0 +1,8 @@
+Branch code:
+$JUJU_REPOSITORY/layers/collectd/
+
+Assemble the charm:
+charm compose
+
+And deploy:
+juju deploy local:trusty/collectd

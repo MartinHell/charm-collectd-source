@@ -1,0 +1,21 @@
+options:
+  plugins:
+    type: string
+    default: 'default'
+    description: >
+      Comma separated list of plugins to enable. If set to "default"
+      list of plugins will match defaults shipped with Ubuntu package
+  graphite_host:
+    type: string
+    description: Graphite hostname or IP address
+  graphite_port:
+    type: int
+    default: 2003
+    description: Graphite port number
+  graphite_protocol:
+    type: string
+    default: 'TCP'
+    description: TCP or UDP
+  prefix:
+    type: string
+    description: Prepended to unit hostname
