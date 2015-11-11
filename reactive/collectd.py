@@ -8,10 +8,10 @@ from charms.reactive import when, set_state, hook
 @hook('config-changed', 'install')
 def setup_collectd():
     hookenv.status_set('maintenance', 'Configuring collectd')
-    if not get_plugins():
+    install_packages()
+    if not validate_settings():
         return
-    config = hookenv.config()
-    settings = {'config': config,
+    settings = {'config': hookenv.config(),
                 'plugins': get_plugins(),
                 }
 
@@ -25,6 +25,23 @@ def setup_collectd():
 
     set_state('collectd.start')
     hookenv.status_set('active', 'Ready')
+
+
+def validate_settings():
+    required = set(('graphite_host', 'graphite_port', 'graphite_protocol',
+                    'interval', 'plugins', 'prefix'))
+    config = hookenv.config()
+    missing = required.difference(config.viewkeys())
+    if missing:
+        hookenv.status_set('waiting', 'Missing configuration options: {}'.format(missing))
+        return False
+    if config['graphite_protocol'].upper() not in ('TCP', 'UDP'):
+        hookenv.status_set('waiting', 'Bad value for "graphite_protocol" option')
+        return False
+    if config['graphite_port'] < 1 or config['graphite_port'] > 65535:
+        hookenv.status_set('waiting', '"graphite_port" outside of allowed range')
+        return False
+    return True
 
 
 def install_packages():
@@ -41,10 +58,6 @@ def get_plugins():
         'swap', 'users',
         ]
     config = hookenv.config()
-    install_packages()
-    if 'plugins' not in config:
-        hookenv.status_set('waiting', 'Please set "plugins" option')
-        return
     if config['plugins'] == 'default':
         plugins = default_plugins
     else:

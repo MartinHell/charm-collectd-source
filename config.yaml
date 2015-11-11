@@ -18,4 +18,9 @@ options:
     description: TCP or UDP
   prefix:
     type: string
+    default: 'collectd.'
     description: Prepended to unit hostname
+  interval:
+    type: int
+    default: 10
+    description: Interval at which to query values

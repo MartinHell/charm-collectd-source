@@ -9,12 +9,7 @@ description: |
   system. Also, the statistics are very fine grained since the files are 
   updated every 10 seconds by default.  The collected information can be
   used to find current performance bottlenecks (performance analysis)
-  and predict future system load (capacity planning).  This package
-  provides a full installation of the daemon, including the 
-  configuration. For the core system, see the "collectd-core" package,
-  which allows sites to, e.g., provide customizations (like a custom
-  default configuration) on top of it without having to modify the 
-  "collectd" package.
+  and predict future system load (capacity planning).
 subordinate: true
 requires:
   host:
