@@ -35,11 +35,10 @@ LoadPlugin {{ plugin }}
         Port "{{ config.graphite_port }}"
         Protocol "{{ config.graphite_protocol }}"
         LogSendErrors true
-{% if 'prefix' in config -%}
         Prefix "{{ config.prefix }}"
-{% endif %}
         StoreRates true
         AlwaysAppendDS false
         EscapeCharacter "_"
     </Node>
 </Plugin>
+
