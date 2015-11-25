@@ -1,8 +1,10 @@
-import os.path
+import os
+import glob
 from charmhelpers import fetch
 from charmhelpers.core import host, hookenv
 from charmhelpers.core.templating import render
-from charms.reactive import when, set_state, hook
+from charms.reactive import when, when_not, set_state, hook
+from charms.reactive.helpers import any_file_changed
 
 
 @hook('config-changed', 'install')
@@ -25,6 +27,41 @@ def setup_collectd():
 
     set_state('collectd.start')
     hookenv.status_set('active', 'Ready')
+
+
+@when('nrpe-external-master.available')
+def setup_nrpe_checks(nagios):
+    config = hookenv.config()
+    options = {'check_name': 'check_collectd',
+               'description': 'Verify that collectd process is running',
+               'servicegroups': config['nagios_servicegroups'],
+               'command': '/usr/lib/nagios/plugins/check_procs -C collectd -c 1:1'
+               }
+    options['hostname'] = '{}-{}'.format(config['nagios_context'],
+                                         hookenv.local_unit()).replace('/', '-')
+
+    render(source='nagios-export.jinja2',
+           target='/var/lib/nagios/export/service__{}_collectd.cfg'.format(options['hostname']),
+           perms=0o644,
+           context=options
+           )
+    render(source='nrpe-config.jinja2',
+           target='/etc/nagios/nrpe.d/check_collectd.cfg',
+           perms=0o644,
+           context=options
+           )
+    if any_file_changed(['/etc/nagios/nrpe.d/check_collectd.cfg']):
+        host.service_reload('nagios-nrpe-server')
+
+
+@when_not('nrpe-external-master.available')
+def wipe_nrpe_checks():
+    checks = ['/etc/nagios/nrpe.d/check_collectd.cfg',
+              '/var/lib/nagios/export/service__*_collectd.cfg']
+    for check in checks:
+        for f in glob.glob(check):
+            if os.path.isfile(f):
+                os.unlink(f)
 
 
 def validate_settings():

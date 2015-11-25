@@ -15,3 +15,7 @@ requires:
   host:
     interface: juju-info
     scope: container
+provides:
+  nrpe-external-master:
+    interface: nrpe-external-master
+    scope: container
