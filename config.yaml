@@ -9,6 +9,44 @@ options:
     type: int
     default: 10
     description: Interval at which to query values by default
+  prometheus_export:
+    type: string
+    default: ""
+    description: >
+      If set collectd will be configured to publish metrics to prometheus graphite_exporter
+      service using write_http plugin. If host is set to 127.0.0.1 the charm will install
+      collectd_exporter package which must be available for installation.
+      See "install_sources" and "install_keys". Examples:
+
+
+        To send metrics to remote graphite_exporter instance using http POST
+        to /post-url:
+          http://remote.host.example.com:9103/collectd-post
+
+        To configure graphite_exporter and publish metrics to external
+        graphite instance under /metrics URI:
+          http://127.0.0.1:9103/metrics
+  install_sources:
+    default: ""
+    type: string
+    description: |
+        YAML list of additional installation sources, as a string. The number of
+        install_sources must match the number of install_keys. For example:
+          install_sources: |
+           - ppa:project1/ppa
+           - ppa:project2/ppa
+  install_keys:
+    default: ""
+    type: string
+    description: |
+        YAML list of GPG keys for installation sources, as a string. For apt repository
+        URLs, use the public key ID used to verify package signatures. For 
+        other sources such as PPA, use empty string. This list must have the 
+        same number of elements as install_sources, even if the key items are 
+        all empty string. An example to go with the above for install_sources:
+          install_keys: |
+           - ""
+           - ""
   graphite_endpoint:
     type: string
     description: >
@@ -23,6 +61,12 @@ options:
     type: string
     default: 'collectd.'
     description: Prepended to unit hostname in graphite. Only used in graphite_endpoint is set
+  network_target:
+    type: string
+    default: ""
+    description: >
+      Configured collectd to send data over network to remote collectd intance. Example:
+        192.168.99.99:25826
   nagios_context:
     default: "juju"
     type: string

@@ -1,5 +1,6 @@
 import os
 import glob
+import urlparse
 from charmhelpers import fetch
 from charmhelpers.core import host, hookenv
 from charmhelpers.core.templating import render
@@ -82,6 +83,7 @@ def validate_settings():
 
 def install_packages():
     packages = ['collectd-core']
+    fetch.configure_sources()
     fetch.apt_update()
     fetch.apt_install(packages)
 
@@ -91,14 +93,18 @@ def get_plugins():
         'syslog', 'battery', 'cpu', 'df', 'disk', 'entropy', 'interface',
         'irq', 'load', 'memory', 'processes', 'rrdtool', 'swap', 'users'
         ]
-    config = hookenv.config()
+    config = resolve_config()
     if config['plugins'] == 'default':
         plugins = default_plugins
     else:
         plugins = [p.strip() for p in config['plugins'].split(',')]
 
-    if 'graphite_endpoint' in config:
+    if 'graphite_host' in config:
         plugins.append('write_graphite')
+    if 'network_host' in config:
+        plugins.append('network')
+    if 'http_endpoint' in config:
+        plugins.append('write_http')
 
     for p in plugins:
         if not os.path.isfile(os.path.join('/usr/lib/collectd', p + '.so')):
@@ -126,9 +132,18 @@ def install_conf_d(plugins):
 
 def resolve_config():
     config = hookenv.config()
-    if 'graphite_endpoint' in config:
+    if config.get('graphite_endpoint', False):
         config['graphite_host'], config['graphite_port'] = config['graphite_endpoint'].split(':')
         config['graphite_port'] = int(config['graphite_port'])
+    if config.get('prometheus_export', False):
+        prometheus_export = urlparse.urlparse(config['prometheus_export'])
+        config['http_endpoint'] = prometheus_export.netloc
+        config['http_path'] = '/collectd-post'
+        config['http_format'] = 'JSON'
+        config['http_rates'] = 'true'
+        config['prometheus_path'] = prometheus_export.path
+    if config.get('network_target', False):
+        config['network_host'], config['network_port'] = config['network_target'].split(':')
     return config
 
 

@@ -1,0 +1,11 @@
+# Maintained by juju. Local changes will be lost
+
+<Plugin write_http>
+  <Node "http_endpoint"> 
+    URL "http://{{ config.http_endpoint }}{{ config.http_path }}"
+    Format "{{ config.http_format }}"
+    StoreRates {{ config.http_rates }}
+  </Node>
+</Plugin>
+
+
