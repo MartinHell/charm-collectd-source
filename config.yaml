@@ -5,25 +5,24 @@ options:
     description: >
       Comma separated list of plugins to enable. If set to "default"
       list of plugins will match defaults shipped with Ubuntu package
-  graphite_host:
-    type: string
-    description: Graphite hostname or IP address
-  graphite_port:
-    type: int
-    default: 2003
-    description: Graphite port number
-  graphite_protocol:
-    type: string
-    default: 'TCP'
-    description: TCP or UDP
-  prefix:
-    type: string
-    default: 'collectd.'
-    description: Prepended to unit hostname
   interval:
     type: int
     default: 10
-    description: Interval at which to query values
+    description: Interval at which to query values by default
+  graphite_endpoint:
+    type: string
+    description: >
+      Optional graphite hostname(or IP) and port. For example:
+          graphite.example.com:2003
+      If set write_graphite will be enabled and configured
+  graphite_protocol:
+    type: string
+    default: 'TCP'
+    description: TCP or UDP. Only used if graphite_endpoint is set
+  graphite_prefix:
+    type: string
+    default: 'collectd.'
+    description: Prepended to unit hostname in graphite. Only used in graphite_endpoint is set
   nagios_context:
     default: "juju"
     type: string

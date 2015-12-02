@@ -13,10 +13,10 @@ def setup_collectd():
     install_packages()
     if not validate_settings():
         return
+    install_conf_d(get_plugins())
     settings = {'config': hookenv.config(),
                 'plugins': get_plugins(),
                 }
-
     render(source='collectd.conf.j2',
            target='/etc/collectd/collectd.conf',
            owner='root',
@@ -65,17 +65,16 @@ def wipe_nrpe_checks():
 
 
 def validate_settings():
-    required = set(('graphite_host', 'graphite_port', 'graphite_protocol',
-                    'interval', 'plugins', 'prefix'))
-    config = hookenv.config()
+    required = set(('interval', 'plugins', 'prefix'))
+    config = resolve_config()
     missing = required.difference(config.viewkeys())
     if missing:
         hookenv.status_set('waiting', 'Missing configuration options: {}'.format(missing))
         return False
-    if config['graphite_protocol'].upper() not in ('TCP', 'UDP'):
+    if 'graphite_protocol' in config and config['graphite_protocol'].upper() not in ('TCP', 'UDP'):
         hookenv.status_set('waiting', 'Bad value for "graphite_protocol" option')
         return False
-    if config['graphite_port'] < 1 or config['graphite_port'] > 65535:
+    if 'graphite_port' in config and (config['graphite_port'] < 1 or config['graphite_port'] > 65535):
         hookenv.status_set('waiting', '"graphite_port" outside of allowed range')
         return False
     return True
@@ -89,21 +88,48 @@ def install_packages():
 
 def get_plugins():
     default_plugins = [
-        'write_graphite', 'syslog', 'battery',
-        'cpu', 'df', 'disk', 'entropy', 'interface',
-        'irq', 'load', 'memory', 'processes', 'rrdtool',
-        'swap', 'users',
+        'syslog', 'battery', 'cpu', 'df', 'disk', 'entropy', 'interface',
+        'irq', 'load', 'memory', 'processes', 'rrdtool', 'swap', 'users'
         ]
     config = hookenv.config()
     if config['plugins'] == 'default':
         plugins = default_plugins
     else:
         plugins = [p.strip() for p in config['plugins'].split(',')]
+
+    if 'graphite_endpoint' in config:
+        plugins.append('write_graphite')
+
     for p in plugins:
         if not os.path.isfile(os.path.join('/usr/lib/collectd', p + '.so')):
             hookenv.status_set('waiting', 'Invalid plugin {}'.format(p))
             return
     return plugins
+
+
+def install_conf_d(plugins):
+    if not os.path.isdir('/etc/collectd/collectd.conf.d'):
+        os.mkdir('/etc/collectd/collectd.conf.d')
+    for plugin in plugins:
+        template = 'collectd.conf.d/{}.conf.j2'.format(plugin)
+        if os.path.isfile(os.path.join('templates', template)):
+            hookenv.log('Installing configuration file for "{}" plugin'.format(plugin))
+
+            render(source=template,
+                   target='/etc/collectd/collectd.conf.d/{}.conf'.format(plugin),
+                   owner='root',
+                   group='root',
+                   perms=0o644,
+                   context={'config': resolve_config()}
+                   )
+
+
+def resolve_config():
+    config = hookenv.config()
+    if 'graphite_endpoint' in config:
+        config['graphite_host'], config['graphite_port'] = config['graphite_endpoint'].split(':')
+        config['graphite_port'] = int(config['graphite_port'])
+    return config
 
 
 @when('collectd.start')

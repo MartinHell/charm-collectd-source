@@ -1,4 +1,5 @@
 # Config file for collectd(1).
+# Maintained by juju, manual changes will be lost
 
 ##############################################################################
 # Global                                                                     #
@@ -26,19 +27,10 @@ LoadPlugin {{ plugin }}
 {% endfor %}
 
 ##############################################################################
-# Plugin configuration                                                       #
+# Include extra configs                                                      #
 ##############################################################################
 
-<Plugin write_graphite>
-    <Node "graphite-server">
-        Host "{{ config.graphite_host }}"
-        Port "{{ config.graphite_port }}"
-        Protocol "{{ config.graphite_protocol }}"
-        LogSendErrors true
-        Prefix "{{ config.prefix }}"
-        StoreRates true
-        AlwaysAppendDS false
-        EscapeCharacter "_"
-    </Node>
-</Plugin>
+<Include "/etc/collectd/collectd.conf.d">
+        Filter "*.conf"
+</Include>
 
