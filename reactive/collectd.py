@@ -78,6 +78,9 @@ def validate_settings():
     if 'graphite_port' in config and (config['graphite_port'] < 1 or config['graphite_port'] > 65535):
         hookenv.status_set('waiting', '"graphite_port" outside of allowed range')
         return False
+    if 'network_port' in config and (config['network_port'] < 1 or config['network_port'] > 65535):
+        hookenv.status_set('waiting', '"network_port" outside of allowed range')
+        return False
     return True
 
 
@@ -144,6 +147,7 @@ def resolve_config():
         config['prometheus_path'] = prometheus_export.path
     if config.get('network_target', False):
         config['network_host'], config['network_port'] = config['network_target'].split(':')
+        config['network_port'] = int(config['network_port'])
     return config
 
 
