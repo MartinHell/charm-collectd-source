@@ -1,12 +1,16 @@
 import os
 import glob
-import urlparse
+import six
 from charmhelpers import fetch
 from charmhelpers.core import host, hookenv
 from charmhelpers.core.templating import render
 from charms.reactive import when, when_not, set_state, hook
 from charms.reactive.helpers import any_file_changed
 
+if six.PY2:
+    import urlparse
+else:
+    import urllib.parse as urlparse
 
 @hook('config-changed', 'install')
 def setup_collectd():
@@ -14,17 +18,22 @@ def setup_collectd():
     install_packages()
     if not validate_settings():
         return
+    config = resolve_config()
     install_conf_d(get_plugins())
-    settings = {'config': resolve_config(),
+    settings = {'config': config,
                 'plugins': get_plugins(),
                 }
     render(source='collectd.conf.j2',
            target='/etc/collectd/collectd.conf',
-           owner='root',
-           group='root',
-           perms=0o644,
            context=settings,
            )
+
+    if config.get('prometheus_export', False) and config['http_endpoint'].startswith('127.0.0.1'):
+        render(source='collectd-exporter-prometheus.j2',
+               target='/etc/default/collectd-exporter-prometheus',
+               context=settings,
+               )
+        set_state('prometheus-exporter.start')
 
     set_state('collectd.start')
     hookenv.status_set('active', 'Ready')
@@ -43,12 +52,10 @@ def setup_nrpe_checks(nagios):
 
     render(source='nagios-export.jinja2',
            target='/var/lib/nagios/export/service__{}_collectd.cfg'.format(options['hostname']),
-           perms=0o644,
            context=options
            )
     render(source='nrpe-config.jinja2',
            target='/etc/nagios/nrpe.d/check_collectd.cfg',
-           perms=0o644,
            context=options
            )
     if any_file_changed(['/etc/nagios/nrpe.d/check_collectd.cfg']):
@@ -68,7 +75,7 @@ def wipe_nrpe_checks():
 def validate_settings():
     required = set(('interval', 'plugins'))
     config = resolve_config()
-    missing = required.difference(config.viewkeys())
+    missing = required.difference(config.keys())
     if missing:
         hookenv.status_set('waiting', 'Missing configuration options: {}'.format(missing))
         return False
@@ -86,7 +93,8 @@ def validate_settings():
 
 def install_packages():
     packages = ['collectd-core']
-    if config.get('prometheus_export', False):
+    config = resolve_config()
+    if config.get('prometheus_export', False) and config['http_endpoint'].startswith('127.0.0.1'):
         # XXX comes from aluria's PPA, check if there is upstream package available
         packages.append('canonical-bootstack-collectd-exporter')
     fetch.configure_sources()
@@ -105,11 +113,11 @@ def get_plugins():
     else:
         plugins = [p.strip() for p in config['plugins'].split(',')]
 
-    if 'graphite_host' in config:
+    if config.get('graphite_endpoint', False):
         plugins.append('write_graphite')
-    if 'network_host' in config:
+    if config.get('network_target', False):
         plugins.append('network')
-    if 'http_endpoint' in config:
+    if config.get('prometheus_export', False):
         plugins.append('write_http')
 
     for p in plugins:
@@ -129,9 +137,6 @@ def install_conf_d(plugins):
 
             render(source=template,
                    target='/etc/collectd/collectd.conf.d/{}.conf'.format(plugin),
-                   owner='root',
-                   group='root',
-                   perms=0o644,
                    context={'config': resolve_config()}
                    )
 
@@ -147,7 +152,8 @@ def resolve_config():
         config['http_path'] = '/collectd-post'
         config['http_format'] = 'JSON'
         config['http_rates'] = 'true'
-        config['prometheus_path'] = prometheus_export.path
+        config['prometheus_export_path'] = prometheus_export.path
+        config['prometheus_export_port'] = int(config['http_endpoint'].split(':')[1])
     if config.get('network_target', False):
         config['network_host'], config['network_port'] = config['network_target'].split(':')
         config['network_port'] = int(config['network_port'])
@@ -158,3 +164,13 @@ def resolve_config():
 def start_collectd():
     if not host.service_running('collectd'):
         host.service_start('collectd')
+
+
+@when('prometheus-exporter.start')
+def start_prometheus_exporter():
+    if not host.service_running('collectd-exporter-prometheus'):
+        host.service_start('collectd-exporter-prometheus')
+        return
+    if any_file_changed(['/etc/default/collectd-exporter-prometheus']):
+        # Restart, reload breaks it
+        host.service_restart('collectd-exporter-prometheus')

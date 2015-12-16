@@ -1,0 +1,11 @@
+#---------------------------------------------------
+# This file is Juju managed
+#---------------------------------------------------
+
+# Path under which to accept POST requests from collectd.
+PUSH_PATH='/collectd-post'
+# Address on which to expose metrics and web interface.
+LISTEN_ADDR=':{{ config.prometheus_export_port }}'
+# Path under which to expose Prometheus metrics.
+TELEMETRY_PATH='{{ config.prometheus_export_path }}'
+
