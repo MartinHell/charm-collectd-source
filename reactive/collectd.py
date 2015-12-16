@@ -15,7 +15,7 @@ def setup_collectd():
     if not validate_settings():
         return
     install_conf_d(get_plugins())
-    settings = {'config': hookenv.config(),
+    settings = {'config': resolve_config(),
                 'plugins': get_plugins(),
                 }
     render(source='collectd.conf.j2',
@@ -66,7 +66,7 @@ def wipe_nrpe_checks():
 
 
 def validate_settings():
-    required = set(('interval', 'plugins', 'prefix'))
+    required = set(('interval', 'plugins'))
     config = resolve_config()
     missing = required.difference(config.viewkeys())
     if missing:
@@ -86,6 +86,9 @@ def validate_settings():
 
 def install_packages():
     packages = ['collectd-core']
+    if config.get('prometheus_export', False):
+        # XXX comes from aluria's PPA, check if there is upstream package available
+        packages.append('canonical-bootstack-collectd-exporter')
     fetch.configure_sources()
     fetch.apt_update()
     fetch.apt_install(packages)

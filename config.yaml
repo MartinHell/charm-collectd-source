@@ -16,15 +16,15 @@ options:
       If set collectd will be configured to publish metrics to prometheus graphite_exporter
       service using write_http plugin. If host is set to 127.0.0.1 the charm will install
       collectd_exporter package which must be available for installation.
-      See "install_sources" and "install_keys". Examples:
+      See "install_sources" and "install_keys".
+      Please note that it is also possible to send metric to remote collectd_exporter using
+      collectd binary protocol. This can be done using "network_target" option. Examples:
 
-
-        To send metrics to remote graphite_exporter instance using http POST
-        to /post-url:
+        To send metrics to remote collectd_exporter instance using http POST to "/post-url":
           http://remote.host.example.com:9103/collectd-post
 
-        To configure graphite_exporter and publish metrics to external
-        graphite instance under /metrics URI:
+        To install collectd_exporter locally and expose metrics for prometheus scraping
+        under "/metrics" URI set this option to:
           http://127.0.0.1:9103/metrics
   install_sources:
     default: ""
@@ -49,6 +49,7 @@ options:
            - ""
   graphite_endpoint:
     type: string
+    default: ""
     description: >
       Optional graphite hostname(or IP) and port. For example:
           graphite.example.com:2003
