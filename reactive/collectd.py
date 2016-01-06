@@ -1,4 +1,5 @@
 import os
+import re
 import glob
 import six
 from charmhelpers import fetch
@@ -97,6 +98,7 @@ def install_packages():
     config = resolve_config()
     if config.get('prometheus_export', False) and config['http_endpoint'].startswith('127.0.0.1'):
         # XXX comes from aluria's PPA, check if there is upstream package available
+        hookenv.log('prometheus_export set to localhost, installing exporter locally')
         packages.append('canonical-bootstack-collectd-exporter')
     fetch.configure_sources()
     fetch.apt_update()
@@ -125,6 +127,7 @@ def get_plugins():
         if not os.path.isfile(os.path.join('/usr/lib/collectd', p + '.so')):
             hookenv.status_set('waiting', 'Invalid plugin {}'.format(p))
             return
+    hookenv.log('Plugins to enable: {}'.format(plugins))
     return plugins
 
 
@@ -137,9 +140,14 @@ def install_conf_d(plugins):
             hookenv.log('Installing configuration file for "{}" plugin'.format(plugin))
 
             render(source=template,
-                   target='/etc/collectd/collectd.conf.d/{}.conf'.format(plugin),
+                   target='/etc/collectd/collectd.conf.d/juju_{}.conf'.format(plugin),
                    context={'config': resolve_config()}
                    )
+    for config in glob.glob('/etc/collectd/collectd.conf.d/juju_*.conf'):
+        config_regex = '/etc/collectd/collectd.conf.d/juju_(.+).conf'
+        if re.match(config_regex, config).group(1) not in plugins:
+            hookenv.log('Clearing unused configuration file: {}'.format(config))
+            os.unlink(config)
 
 
 def resolve_config():
@@ -167,14 +175,17 @@ def resolve_config():
 @when('collectd.start')
 def start_collectd():
     if not host.service_running('collectd'):
+        hookenv.log('Starting collectd...')
         host.service_start('collectd')
 
 
 @when('prometheus-exporter.start')
 def start_prometheus_exporter():
     if not host.service_running('collectd-exporter-prometheus'):
+        hookenv.log('Starting collectd-exporter-prometheus...')
         host.service_start('collectd-exporter-prometheus')
         return
     if any_file_changed(['/etc/default/collectd-exporter-prometheus']):
         # Restart, reload breaks it
+        hookenv.log('Restarting collectd-exporter-prometheus, config file changed...')
         host.service_restart('collectd-exporter-prometheus')
