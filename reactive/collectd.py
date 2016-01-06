@@ -177,6 +177,9 @@ def start_collectd():
     if not host.service_running('collectd'):
         hookenv.log('Starting collectd...')
         host.service_start('collectd')
+    if any_file_changed(['/etc/collectd/collectd.conf']):
+        hookenv.log('Restarting collectd, config file changed...')
+        host.service_restart('collectd')
 
 
 @when('prometheus-exporter.start')
