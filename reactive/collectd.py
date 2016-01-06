@@ -12,6 +12,7 @@ if six.PY2:
 else:
     import urllib.parse as urlparse
 
+
 @hook('config-changed', 'install')
 def setup_collectd():
     hookenv.status_set('maintenance', 'Configuring collectd')
@@ -149,11 +150,14 @@ def resolve_config():
     if config.get('prometheus_export', False):
         prometheus_export = urlparse.urlparse(config['prometheus_export'])
         config['http_endpoint'] = prometheus_export.netloc
-        config['http_path'] = '/collectd-post'
         config['http_format'] = 'JSON'
         config['http_rates'] = 'true'
-        config['prometheus_export_path'] = prometheus_export.path
-        config['prometheus_export_port'] = int(config['http_endpoint'].split(':')[1])
+        if config['http_endpoint'].startswith('127.0.0.1') or config['http_endpoint'].startswith('localhost'):
+            config['http_path'] = '/collectd-post'
+            config['prometheus_export_path'] = prometheus_export.path
+            config['prometheus_export_port'] = int(config['http_endpoint'].split(':')[1])
+        else:
+            config['http_path'] = prometheus_export.path
     if config.get('network_target', False):
         config['network_host'], config['network_port'] = config['network_target'].split(':')
         config['network_port'] = int(config['network_port'])
