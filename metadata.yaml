@@ -10,6 +10,8 @@ description: |
   updated every 10 seconds by default.  The collected information can be
   used to find current performance bottlenecks (performance analysis)
   and predict future system load (capacity planning).
+tags:
+  - monitoring
 subordinate: true
 requires:
   host:
