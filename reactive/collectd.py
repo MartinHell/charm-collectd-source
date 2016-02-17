@@ -5,8 +5,8 @@ import six
 from charmhelpers import fetch
 from charmhelpers.core import host, hookenv
 from charmhelpers.core.templating import render
-from charms.reactive import when, when_not, set_state, hook
-from charms.reactive.helpers import any_file_changed
+from charms.reactive import when, when_not, set_state, remove_state
+from charms.reactive.helpers import any_file_changed, data_changed
 
 if six.PY2:
     import urlparse
@@ -14,7 +14,7 @@ else:
     import urllib.parse as urlparse
 
 
-@hook('config-changed', 'install')
+@when_not('collectd.started')
 def setup_collectd():
     hookenv.status_set('maintenance', 'Configuring collectd')
     install_packages()
@@ -39,6 +39,13 @@ def setup_collectd():
 
     set_state('collectd.start')
     hookenv.status_set('active', 'Ready')
+
+
+@when('collectd.started')
+def check_config():
+    if data_changed('collectd.config', hookenv.config()):
+        if validate_settings():
+            setup_collectd()  # reconfigure and restart
 
 
 @when('nrpe-external-master.available')
@@ -177,9 +184,11 @@ def start_collectd():
     if not host.service_running('collectd'):
         hookenv.log('Starting collectd...')
         host.service_start('collectd')
+        set_state('collectd.started')
     if any_file_changed(['/etc/collectd/collectd.conf']):
         hookenv.log('Restarting collectd, config file changed...')
         host.service_restart('collectd')
+    remove_state('collectd.start')
 
 
 @when('prometheus-exporter.start')
@@ -187,8 +196,9 @@ def start_prometheus_exporter():
     if not host.service_running('collectd-exporter-prometheus'):
         hookenv.log('Starting collectd-exporter-prometheus...')
         host.service_start('collectd-exporter-prometheus')
-        return
+        set_state('prometheus-exporter.started')
     if any_file_changed(['/etc/default/collectd-exporter-prometheus']):
         # Restart, reload breaks it
         hookenv.log('Restarting collectd-exporter-prometheus, config file changed...')
         host.service_restart('collectd-exporter-prometheus')
+    remove_state('prometheus-exporter.start')
