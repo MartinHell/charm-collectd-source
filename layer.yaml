@@ -1,1 +1,4 @@
 includes: ['layer:basic', 'interface:nrpe-external-master']
+options:
+  basic:
+    use_venv: true
