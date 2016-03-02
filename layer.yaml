@@ -1,4 +1,5 @@
-includes: ['layer:basic', 'interface:nrpe-external-master']
+includes: ['layer:basic', 'interface:http', 'interface:nrpe-external-master']
+ignore: ['.*.swp' ]
 options:
   basic:
     use_venv: true
