@@ -2,6 +2,7 @@ import os
 import re
 import glob
 import six
+import socket
 from charmhelpers import fetch
 from charmhelpers.core import host, hookenv
 from charmhelpers.core.templating import render
@@ -176,6 +177,13 @@ def resolve_config():
     if config.get('network_target', False):
         config['network_host'], config['network_port'] = config['network_target'].split(':')
         config['network_port'] = int(config['network_port'])
+    if config.get('hostname_type', False).lower() == 'hostname':
+        config['hostname'] = socket.gethostname()
+    elif not config.get('hostname_type', '') or config.get('hostname_type', '').lower() == 'fqdn':
+        config['hostname'] = 'fqdn'
+    else:
+        hookenv.status_set('waiting', 'unsupported value for "hostname_type" option')
+        raise Exception('Invalid value for "hostname_type" option')
     return config
 
 

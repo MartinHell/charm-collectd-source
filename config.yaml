@@ -9,6 +9,16 @@ options:
     type: int
     default: 10
     description: Interval at which to query values by default
+  hostname_type:
+    type: string
+    default: ""
+    description: >
+      Controls how hostname is determined by collectd. Accepted values are:
+        fqdn - sets "FQDNLookup true" in the collectd.conf
+        hostname - use python socket.gethostname() to get hostname. Useful in
+                   clouds where FQDN lookup does not work
+
+      If unset or set to empty string defaults to fqdn
   prometheus_export:
     type: string
     default: ""
