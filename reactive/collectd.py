@@ -34,7 +34,7 @@ def setup_collectd():
            context=settings,
            )
 
-    if get_prometheus_export() and config['http_endpoint'].startswith('127.0.0.1'):
+    if config.get('http_endpoint', False) and config['http_endpoint'].startswith('127.0.0.1'):
         render(source='collectd-exporter-prometheus.j2',
                target='/etc/default/collectd-exporter-prometheus',
                context=settings,
@@ -107,7 +107,7 @@ def validate_settings():
 def install_packages():
     packages = ['collectd-core']
     config = resolve_config()
-    if get_prometheus_export() and config['http_endpoint'].startswith('127.0.0.1'):
+    if config.get('http_endpoint', False) and config['http_endpoint'].startswith('127.0.0.1'):
         # XXX comes from aluria's PPA, check if there is upstream package available
         hookenv.log('prometheus_export set to localhost, installing exporter locally')
         packages.append('canonical-bootstack-collectd-exporter')
@@ -133,8 +133,6 @@ def get_plugins():
         plugins.append('network')
     if config.get('prometheus_export', False):
         plugins.append('write_http')
-    if 'df' in config['plugins']:
-        plugins.append('df')
 
     for p in plugins:
         if not os.path.isfile(os.path.join('/usr/lib/collectd', p + '.so')):
@@ -220,7 +218,6 @@ def start_prometheus_exporter():
 
 @when('target.available')
 def configure_prometheus_relation(target):
-    if get_prometheus_export():
-        prometheus_export = urlparse.urlparse(get_prometheus_export())
-        port = prometheus_export.netloc.split(':')[1]
-        target.configure(port)
+    config = resolve_config()
+    if config.get('prometheus_export_port', False):
+        target.configure(config.get('prometheus_export_port'))
