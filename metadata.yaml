@@ -21,6 +21,3 @@ provides:
   nrpe-external-master:
     interface: nrpe-external-master
     scope: container
-options:
-  basic:
-    use_venv: true
