@@ -15,6 +15,10 @@ else:
     import urllib.parse as urlparse
 
 
+# When prometheus_export=True
+DEFAULT_PROMETHEUS_EXPORT = 'http://127.0.0.1:9103/metrics'
+
+
 @when_not('collectd.started')
 def setup_collectd():
     hookenv.status_set('maintenance', 'Configuring collectd')
@@ -31,7 +35,7 @@ def setup_collectd():
            context=settings,
            )
 
-    if config.get('prometheus_export', False) and config['http_endpoint'].startswith('127.0.0.1'):
+    if config.get('http_endpoint', False) and config['http_endpoint'].startswith('127.0.0.1'):
         render(source='collectd-exporter-prometheus.j2',
                target='/etc/default/collectd-exporter-prometheus',
                context=settings,
@@ -104,7 +108,7 @@ def validate_settings():
 def install_packages():
     packages = ['collectd-core']
     config = resolve_config()
-    if config.get('prometheus_export', False) and config['http_endpoint'].startswith('127.0.0.1'):
+    if config.get('http_endpoint', False) and config['http_endpoint'].startswith('127.0.0.1'):
         # XXX comes from aluria's PPA, check if there is upstream package available
         hookenv.log('prometheus_export set to localhost, installing exporter locally')
         packages.append('canonical-bootstack-collectd-exporter')
@@ -158,13 +162,21 @@ def install_conf_d(plugins):
             os.unlink(config)
 
 
+def get_prometheus_export():
+    config = hookenv.config()
+    prometheus_export = config.get('prometheus_export', False)
+    if prometheus_export is True or prometheus_export in ("True", "true"):
+        prometheus_export = DEFAULT_PROMETHEUS_EXPORT
+    return prometheus_export
+
+
 def resolve_config():
     config = hookenv.config()
     if config.get('graphite_endpoint', False):
         config['graphite_host'], config['graphite_port'] = config['graphite_endpoint'].split(':')
         config['graphite_port'] = int(config['graphite_port'])
-    if config.get('prometheus_export', False):
-        prometheus_export = urlparse.urlparse(config['prometheus_export'])
+    if get_prometheus_export():
+        prometheus_export = urlparse.urlparse(get_prometheus_export())
         config['http_endpoint'] = prometheus_export.netloc
         config['http_format'] = 'JSON'
         config['http_rates'] = 'true'
@@ -210,3 +222,10 @@ def start_prometheus_exporter():
         hookenv.log('Restarting collectd-exporter-prometheus, config file changed...')
         host.service_restart('collectd-exporter-prometheus')
     remove_state('prometheus-exporter.start')
+
+
+@when('target.available')
+def configure_prometheus_relation(target):
+    config = resolve_config()
+    if config.get('prometheus_export_port', False):
+        target.configure(config.get('prometheus_export_port'))

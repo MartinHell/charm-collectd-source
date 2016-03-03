@@ -21,3 +21,5 @@ provides:
   nrpe-external-master:
     interface: nrpe-external-master
     scope: container
+  target:
+    interface: http

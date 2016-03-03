@@ -36,6 +36,9 @@ options:
         To install collectd_exporter locally and expose metrics for prometheus scraping
         under "/metrics" URI set this option to:
           http://127.0.0.1:9103/metrics
+      If set to "True", it'll default to "http://127.0.0.1:9103/metrics", specially
+      handy if you're relating it to prometheus service, as this setting is still needed
+      for the relation to work.
   install_sources:
     default: ""
     type: string
