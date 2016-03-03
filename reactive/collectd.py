@@ -179,7 +179,7 @@ def resolve_config():
         prometheus_export = urlparse.urlparse(get_prometheus_export())
         config['http_endpoint'] = prometheus_export.netloc
         config['http_format'] = 'JSON'
-        config['http_rates'] = 'true'
+        config['http_rates'] = 'false'
         if config['http_endpoint'].startswith('127.0.0.1') or config['http_endpoint'].startswith('localhost'):
             config['http_path'] = '/collectd-post'
             config['prometheus_export_path'] = prometheus_export.path
