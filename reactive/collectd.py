@@ -36,9 +36,13 @@ def setup_collectd():
            )
 
     if config.get('http_endpoint', False) and config['http_endpoint'].startswith('127.0.0.1'):
-        render(source='collectd-exporter-prometheus.j2',
-               target='/etc/default/collectd-exporter-prometheus',
-               context=settings,
+        args = [
+            '-web.listen-address :{}'.format(config['prometheus_export_port']),
+            '-web.telemetry-path {}'.format(config['prometheus_export_path']),
+        ]
+        render(source='prometheus-collectd-exporter.j2',
+               target='/etc/default/prometheus-collectd-exporter',
+               context={'args': args},
                )
         set_state('prometheus-exporter.start')
 
@@ -111,7 +115,7 @@ def install_packages():
     if config.get('http_endpoint', False) and config['http_endpoint'].startswith('127.0.0.1'):
         # XXX comes from aluria's PPA, check if there is upstream package available
         hookenv.log('prometheus_export set to localhost, installing exporter locally')
-        packages.append('canonical-bootstack-collectd-exporter')
+        packages.append('prometheus-collectd-exporter')
     fetch.configure_sources()
     fetch.apt_update()
     fetch.apt_install(packages)
@@ -213,14 +217,14 @@ def start_collectd():
 
 @when('prometheus-exporter.start')
 def start_prometheus_exporter():
-    if not host.service_running('collectd-exporter-prometheus'):
-        hookenv.log('Starting collectd-exporter-prometheus...')
-        host.service_start('collectd-exporter-prometheus')
+    if not host.service_running('prometheus-collectd-exporter'):
+        hookenv.log('Starting prometheus-collectd-exporter...')
+        host.service_start('prometheus-collectd-exporter')
         set_state('prometheus-exporter.started')
-    if any_file_changed(['/etc/default/collectd-exporter-prometheus']):
+    if any_file_changed(['/etc/default/prometheus-collectd-exporter']):
         # Restart, reload breaks it
-        hookenv.log('Restarting collectd-exporter-prometheus, config file changed...')
-        host.service_restart('collectd-exporter-prometheus')
+        hookenv.log('Restarting prometheus-collectd-exporter, config file changed...')
+        host.service_restart('prometheus-collectd-exporter')
     remove_state('prometheus-exporter.start')
 
 
