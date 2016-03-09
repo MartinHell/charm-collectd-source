@@ -6,7 +6,7 @@ By default metrics are not forwarded or exposed in any way
 but that can be achieved using configuration options
 
 Optionally the charm can expose metrics for prometheus scraping.
-This requires `canonical-bootstack-collectd-exporter` package to
+This requires `prometheus-collectd-exporter` package to
 be available for installation
 
 ## How to deploy the charm
