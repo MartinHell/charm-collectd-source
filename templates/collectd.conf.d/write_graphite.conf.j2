@@ -6,10 +6,9 @@
         Port "{{ config.graphite_port }}"
         Protocol "{{ config.graphite_protocol }}"
         LogSendErrors true
-        Prefix "{{ config.prefix }}"
+        Prefix "{{ config.graphite_prefix }}"
         StoreRates true
         AlwaysAppendDS false
         EscapeCharacter "_"
     </Node>
 </Plugin>
-
