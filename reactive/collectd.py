@@ -4,7 +4,7 @@ import glob
 import six
 import socket
 from charmhelpers import fetch
-from charmhelpers.core import host, hookenv
+from charmhelpers.core import host, hookenv, unitdata
 from charmhelpers.core.templating import render
 from charms.reactive import when, when_not, set_state, remove_state
 from charms.reactive.helpers import any_file_changed, data_changed
@@ -44,6 +44,12 @@ def setup_collectd():
                target='/etc/default/prometheus-collectd-exporter',
                context={'args': args},
                )
+        kv = unitdata.kv()
+        if kv.get('prometheus_exporter_port') != config['prometheus_export_port']:
+            hookenv.open_port(config['prometheus_export_port'])
+            if kv.get('prometheus_exporter_port'):  # Dont try to close non existing ports
+                hookenv.close_port(kv.get('prometheus_exporter_port'))
+            kv.set('prometheus_exporter_port', config['prometheus_export_port'])
         set_state('prometheus-exporter.start')
 
     set_state('collectd.start')
