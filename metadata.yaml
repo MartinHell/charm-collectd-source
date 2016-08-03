@@ -1,6 +1,6 @@
 name: collectd
 summary: Statistics collection and monitoring daemon
-maintainer: Jacek Nykis <jacek.nykis@canonical.com>
+maintainer: Prometheus Charmers <prometheus-charmers@lists.launchpad.net>
 description: |
   collectd is a small daemon which collects system information
   periodically and provides mechanisms to monitor and store the values
@@ -12,6 +12,8 @@ description: |
   and predict future system load (capacity planning).
 tags:
   - monitoring
+series:
+  - trusty
 subordinate: true
 requires:
   host:
