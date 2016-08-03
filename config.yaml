@@ -9,6 +9,16 @@ options:
     type: int
     default: 10
     description: Interval at which to query values by default
+  hostname_type:
+    type: string
+    default: ""
+    description: >
+      Controls how hostname is determined by collectd. Accepted values are:
+        fqdn - sets "FQDNLookup true" in the collectd.conf
+        hostname - use python socket.gethostname() to get hostname. Useful in
+                   clouds where FQDN lookup does not work
+
+      If unset or set to empty string defaults to fqdn
   prometheus_export:
     type: string
     default: ""
@@ -26,6 +36,9 @@ options:
         To install collectd_exporter locally and expose metrics for prometheus scraping
         under "/metrics" URI set this option to:
           http://127.0.0.1:9103/metrics
+      If set to "True", it'll default to "http://127.0.0.1:9103/metrics", specially
+      handy if you're relating it to prometheus service, as this setting is still needed
+      for the relation to work.
   install_sources:
     default: ""
     type: string

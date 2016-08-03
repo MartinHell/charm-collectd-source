@@ -5,8 +5,12 @@
 # Global                                                                     #
 ##############################################################################
 
-#Hostname "localhost"
+{%- if config['hostname'] == "fqdn" %}
 FQDNLookup true
+{%- else %}
+Hostname "{{ config.hostname }}"
+{%- endif %}
+
 Interval {{ config.interval }}
 
 ##############################################################################
