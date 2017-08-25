@@ -224,14 +224,14 @@ def start_collectd():
 
 @when('prometheus-exporter.start')
 def start_prometheus_exporter():
-    if not host.service_running('prometheus-collectd-exporter'):
-        hookenv.log('Starting prometheus-collectd-exporter...')
-        host.service_start('prometheus-collectd-exporter')
+    if not host.service_running('prometheus-node-exporter'):
+        hookenv.log('Starting prometheus-node-exporter...')
+        host.service_start('prometheus-node-exporter')
         set_state('prometheus-exporter.started')
-    if any_file_changed(['/etc/default/prometheus-collectd-exporter']):
+    if any_file_changed(['/etc/default/prometheus-node-exporter']):
         # Restart, reload breaks it
-        hookenv.log('Restarting prometheus-collectd-exporter, config file changed...')
-        host.service_restart('prometheus-collectd-exporter')
+        hookenv.log('Restarting prometheus-node-exporter, config file changed...')
+        host.service_restart('prometheus-node-exporter')
     remove_state('prometheus-exporter.start')
 
 
