@@ -39,9 +39,10 @@ def setup_collectd():
         args = [
             '-web.listen-address :{}'.format(config['prometheus_export_port']),
             '-web.telemetry-path {}'.format(config['prometheus_export_path']),
+            '-collector.diskstats.ignored-devices="^(ram|loop|fd)\\d+$',
         ]
-        render(source='prometheus-collectd-exporter.j2',
-               target='/etc/default/prometheus-collectd-exporter',
+        render(source='prometheus-node-exporter.j2',
+               target='/etc/default/prometheus-node-exporter',
                context={'args': args},
                )
         kv = unitdata.kv()
@@ -121,7 +122,7 @@ def install_packages():
     if config.get('http_endpoint', False) and config['http_endpoint'].startswith('127.0.0.1'):
         # XXX comes from aluria's PPA, check if there is upstream package available
         hookenv.log('prometheus_export set to localhost, installing exporter locally')
-        packages.append('prometheus-collectd-exporter')
+        packages.append('prometheus-node-exporter')
     fetch.configure_sources()
     fetch.apt_update()
     fetch.apt_install(packages)
