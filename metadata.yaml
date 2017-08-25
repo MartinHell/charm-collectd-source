@@ -13,7 +13,7 @@ description: |
 tags:
   - monitoring
 series:
-  - trusty
+  - xenial
 subordinate: true
 requires:
   host:
