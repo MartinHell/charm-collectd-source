@@ -39,7 +39,7 @@ def setup_collectd():
         args = [
             '-web.listen-address :{}'.format(config['prometheus_export_port']),
             '-web.telemetry-path {}'.format(config['prometheus_export_path']),
-            '-collector.diskstats.ignored-devices="^(ram|loop|fd)\\d+$',
+            "-collector.diskstats.ignored-devices='^(ram|loop|fd)\\d+$'",
         ]
         render(source='prometheus-node-exporter.j2',
                target='/etc/default/prometheus-node-exporter',
