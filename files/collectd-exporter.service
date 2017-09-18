@@ -1,0 +1,12 @@
+[Unit]
+Description=Collectd Exporter
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/bin/collectd_exporter -collectd.listen-address=0.0.0.0:9103
+
+[Install]
+WantedBy=multi-user.target
+

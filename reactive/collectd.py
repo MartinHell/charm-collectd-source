@@ -4,6 +4,7 @@ import glob
 import six
 import socket
 from charmhelpers import fetch
+from charmhelpers import payload
 from charmhelpers.core import host, hookenv, unitdata
 from charmhelpers.core.templating import render
 from charms.reactive import when, when_not, set_state, remove_state
@@ -39,18 +40,20 @@ def setup_collectd():
         args = [
             '-web.listen-address :{}'.format(config['prometheus_export_port']),
             '-web.telemetry-path {}'.format(config['prometheus_export_path']),
+            "-collector.diskstats.ignored-devices='^(ram|loop|fd)\\d+$'",
         ]
-        render(source='prometheus-collectd-exporter.j2',
-               target='/etc/default/prometheus-collectd-exporter',
-               context={'args': args},
-               )
+        # render(source='collectd-exporter.j2',
+        #        target='/etc/default/collectd-exporter',
+        #        context={'args': args},
+        #        )
         kv = unitdata.kv()
         if kv.get('prometheus_exporter_port') != config['prometheus_export_port']:
             hookenv.open_port(config['prometheus_export_port'])
             if kv.get('prometheus_exporter_port'):  # Dont try to close non existing ports
                 hookenv.close_port(kv.get('prometheus_exporter_port'))
             kv.set('prometheus_exporter_port', config['prometheus_export_port'])
-        set_state('prometheus-exporter.start')
+        if collectd_exporter_install():
+            set_state('collectd-exporter.start')
 
     set_state('collectd.start')
     hookenv.status_set('active', 'Ready')
@@ -121,7 +124,7 @@ def install_packages():
     if config.get('http_endpoint', False) and config['http_endpoint'].startswith('127.0.0.1'):
         # XXX comes from aluria's PPA, check if there is upstream package available
         hookenv.log('prometheus_export set to localhost, installing exporter locally')
-        packages.append('prometheus-collectd-exporter')
+        packages.append('prometheus-node-exporter')
     fetch.configure_sources()
     fetch.apt_update()
     fetch.apt_install(packages)
@@ -209,6 +212,26 @@ def resolve_config():
     return config
 
 
+def collectd_exporter_install():
+    collectd_exporter_bin = '/bin/collectd-exporter'
+    collectd_exporter_version = '0.3.1'
+    src = 'https://github.com/prometheus/collectd_exporter/releases/download/' + collectd_exporter_version + '/collectd_exporter-' + collectd_exporter_version + '.linux-amd64.tar.gz'
+    if not os.path.isfile(collectd_exporter_bin):
+        fh = fetch.archiveurl.ArchiveUrlFetchHandler()
+        fh.download(src,'/tmp/collectd-exporter')
+        payload.archive.extract_tarfile('/tmp/collectd-exporter', '/tmp')
+        os.rename('/tmp/collectd_exporter-' + collectd_exporter_version + '.linux-amd64/collectd_exporter', collectd_exporter_bin)
+    if not os.access(collectd_exporter_bin, os.X_OK):
+        os.chmod(collectd_exporter_bin, st.st_mode | stat.S_IEXEC)
+
+    if not host.service('is-enabled', 'collectd-exporter'):
+        rsync(os.path.join(os.getenv('CHARM_DIR'), 'files', 'collectd-exporter.service'),
+                            os.path.join('/etc/systemd/system/', 'collectd-exporter.service'))
+        host.service('enable', 'collectd-exporter')
+        host.service_start('collectd-exporter')
+
+
+
 @when('collectd.start')
 def start_collectd():
     if not host.service_running('collectd'):
@@ -221,17 +244,17 @@ def start_collectd():
     remove_state('collectd.start')
 
 
-@when('prometheus-exporter.start')
-def start_prometheus_exporter():
-    if not host.service_running('prometheus-collectd-exporter'):
-        hookenv.log('Starting prometheus-collectd-exporter...')
-        host.service_start('prometheus-collectd-exporter')
-        set_state('prometheus-exporter.started')
-    if any_file_changed(['/etc/default/prometheus-collectd-exporter']):
+@when('collectd-exporter.start')
+def start_collectd_exporter():
+    if not host.service_running('collectd-exporter'):
+        hookenv.log('Starting collectd-exporter...')
+        host.service_start('collectd-exporter')
+        set_state('collectd-exporter.started')
+    if any_file_changed(['/etc/default/collectd-exporter']):
         # Restart, reload breaks it
-        hookenv.log('Restarting prometheus-collectd-exporter, config file changed...')
-        host.service_restart('prometheus-collectd-exporter')
-    remove_state('prometheus-exporter.start')
+        hookenv.log('Restarting collectd-exporter, config file changed...')
+        host.service_restart('collectd-exporter')
+    remove_state('collectd-exporter.start')
 
 
 @when('target.available')
@@ -239,3 +262,4 @@ def configure_prometheus_relation(target):
     config = resolve_config()
     if config.get('prometheus_export_port', False):
         target.configure(config.get('prometheus_export_port'))
+
