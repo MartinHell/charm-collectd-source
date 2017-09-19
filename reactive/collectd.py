@@ -42,10 +42,6 @@ def setup_collectd():
             '-web.telemetry-path {}'.format(config['prometheus_export_path']),
             "-collector.diskstats.ignored-devices='^(ram|loop|fd)\\d+$'",
         ]
-        # render(source='collectd-exporter.j2',
-        #        target='/etc/default/collectd-exporter',
-        #        context={'args': args},
-        #        )
         kv = unitdata.kv()
         if kv.get('prometheus_exporter_port') != config['prometheus_export_port']:
             hookenv.open_port(config['prometheus_export_port'])
@@ -124,7 +120,6 @@ def install_packages():
     if config.get('http_endpoint', False) and config['http_endpoint'].startswith('127.0.0.1'):
         # XXX comes from aluria's PPA, check if there is upstream package available
         hookenv.log('prometheus_export set to localhost, installing exporter locally')
-        packages.append('prometheus-node-exporter')
     fetch.configure_sources()
     fetch.apt_update()
     fetch.apt_install(packages)
@@ -228,7 +223,6 @@ def collectd_exporter_install():
         rsync(os.path.join(os.getenv('CHARM_DIR'), 'files', 'collectd-exporter.service'),
                             os.path.join('/etc/systemd/system/', 'collectd-exporter.service'))
         host.service('enable', 'collectd-exporter')
-        host.service_start('collectd-exporter')
 
 
 
@@ -250,10 +244,6 @@ def start_collectd_exporter():
         hookenv.log('Starting collectd-exporter...')
         host.service_start('collectd-exporter')
         set_state('collectd-exporter.started')
-    if any_file_changed(['/etc/default/collectd-exporter']):
-        # Restart, reload breaks it
-        hookenv.log('Restarting collectd-exporter, config file changed...')
-        host.service_restart('collectd-exporter')
     remove_state('collectd-exporter.start')
 
 
