@@ -222,7 +222,7 @@ def collectd_exporter_install():
         os.chmod(collectd_exporter_bin, st.st_mode | stat.S_IEXEC)
 
     if not host.service('is-enabled', 'collectd-exporter'):
-        rsync(os.path.join(os.getenv('CHARM_DIR'), 'files', 'collectd-exporter.service'),
+        host.rsync(os.path.join(os.getenv('CHARM_DIR'), 'files', 'collectd-exporter.service'),
                             os.path.join('/etc/systemd/system/', 'collectd-exporter.service'))
         host.service('enable', 'collectd-exporter')
 
