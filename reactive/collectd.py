@@ -212,12 +212,14 @@ def resolve_config():
 def collectd_exporter_install():
     collectd_exporter_bin = '/bin/collectd-exporter'
     collectd_exporter_version = '0.3.1'
+    installed_or_updated = False
     src = 'https://github.com/prometheus/collectd_exporter/releases/download/' + collectd_exporter_version + '/collectd_exporter-' + collectd_exporter_version + '.linux-amd64.tar.gz'
     if not os.path.isfile(collectd_exporter_bin):
         fh = ArchiveUrlFetchHandler()
         fh.download(source=src,dest='/tmp/collectd-exporter')
         payload.archive.extract_tarfile('/tmp/collectd-exporter', '/tmp')
         os.rename('/tmp/collectd_exporter-' + collectd_exporter_version + '.linux-amd64/collectd_exporter', collectd_exporter_bin)
+        installed_or_updated = True
     if not os.access(collectd_exporter_bin, os.X_OK):
         os.chmod(collectd_exporter_bin, st.st_mode | stat.S_IEXEC)
 
@@ -225,6 +227,8 @@ def collectd_exporter_install():
         host.rsync(os.path.join(os.getenv('CHARM_DIR'), 'files', 'collectd-exporter.service'),
                             os.path.join('/etc/systemd/system/', 'collectd-exporter.service'))
         host.service('enable', 'collectd-exporter')
+        installed_or_updated = True
+    return installed_or_updated
 
 
 
