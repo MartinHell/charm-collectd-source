@@ -9,6 +9,8 @@ from charmhelpers.core import host, hookenv, unitdata
 from charmhelpers.core.templating import render
 from charms.reactive import when, when_not, set_state, remove_state
 from charms.reactive.helpers import any_file_changed, data_changed
+from charmhelpers.fetch.archiveurl import ArchiveUrlFetchHandler
+
 
 if six.PY2:
     import urlparse
@@ -212,8 +214,8 @@ def collectd_exporter_install():
     collectd_exporter_version = '0.3.1'
     src = 'https://github.com/prometheus/collectd_exporter/releases/download/' + collectd_exporter_version + '/collectd_exporter-' + collectd_exporter_version + '.linux-amd64.tar.gz'
     if not os.path.isfile(collectd_exporter_bin):
-        fh = fetch.archiveurl.ArchiveUrlFetchHandler()
-        fh.download(src,'/tmp/collectd-exporter')
+        fh = ArchiveUrlFetchHandler()
+        fh.download(source=src,dest='/tmp/collectd-exporter')
         payload.archive.extract_tarfile('/tmp/collectd-exporter', '/tmp')
         os.rename('/tmp/collectd_exporter-' + collectd_exporter_version + '.linux-amd64/collectd_exporter', collectd_exporter_bin)
     if not os.access(collectd_exporter_bin, os.X_OK):
